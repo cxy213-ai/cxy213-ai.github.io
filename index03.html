@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>数据分析</title>
+   
+   <!-- 引入 ECharts 主文件 -->
+   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+   
+   <!-- 引入本地的中国地图数据文件 -->
+   <script src="js/map/china.js"></script>
+   <!-- 或者如果你的文件在其他位置，使用相对路径，比如： -->
+   <!-- <script src="js/china.js"></script> -->
+
+</head>              
+
+   <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+   	    .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: fixed;
+            width: 100%;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #000;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+      .nav-links a {
+    text-decoration: none;
+    color: #333;
+    padding: 0.8rem 1.2rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+/* 所有导航项的悬停效果 */
+.nav-links a:hover {
+    background: #2196F3;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* 资源整理页面的激活状态 */
+.nav-links a[href='数据分析.html'] {
+    background: #2196F3;
+    color: white;
+}
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background: #2196F3;
+    transition: all 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 80%;
+    left: 10%;
+    background: #2196F3;
+    color: white;
+    transform: translateY(-2px);
+}
+.dashboard-title {
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 60px;  /* 增加顶部间距 */
+    margin-bottom: 30px;
+    /* 其他样式保持不变 */
+}
+    body {
+        background: #001a3f;
+        color: #fff;
+        font-family: "Microsoft YaHei", sans-serif;
+        padding: 20px;
+    }
+    
+    /* 更新 container 和图表样式 */
+    .container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-gap: 20px;
+        max-width: 1800px;
+        margin: 0 auto;
+    }
+	.dashboard-title {
+    text-align: center;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    color: #fff;
+    font-size: 28px;
+    font-weight: bold;
+    background: linear-gradient(135deg, 
+        rgba(0, 41, 107, 0.8) 0%,
+        rgba(0, 160, 233, 0.6) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 80%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 添加发光效果 */
+.dashboard-title::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    animation: shine 3s infinite;
+}
+
+/* 发光动画 */
+@keyframes shine {
+    0% {
+        left: -100%;
+    }
+    50% {
+        left: 100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+    
+    .chart-box {
+        background: rgba(0, 41, 107, 0.5);
+        border: 1px solid #0e4b8d;
+        border-radius: 4px;
+        padding: 15px;
+        backdrop-filter: blur(10px);
+    }
+
+.chart-title {
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 15px;
+    padding-left: 10px;
+    border-left: 4px solid #00a0e9;
+}
+
+.chart {
+    height: 300px;
+    width: 100%;
+}
+
+/* 地图容器特殊处理 */
+.center-map {
+    grid-column: span 3;
+}
+
+.center-map .chart {
+    height: 500px;
+}
+
+
+@media (max-width: 1200px) {
+    .container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .center-map {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+    .center-map {
+        grid-column: span 1;
+    }
+}
+   </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="index.html" class="logo">
+            <span>🤖</span>
+            个人AI知识库
+        </a>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link" id="home">首页</a>
+            <a href="index01.html" class="nav-link" id="articles">文章收集</a>
+            <a href="index02.html" class="nav-link" id="resources">资源整理</a>
+            <a href="index03.html" class="nav-link" id="data">数据可视</a>
+            <a href="index04.html" class="nav-link active" id="about">个人简介</a>
+            <a href="index05.html" class="nav-link" id="learning">学习感悟</a>
+        </div>
+    </div>
+</nav>
+
+   <h2 class="dashboard-title">人工智能行业发展数据分析</h2>
+  <div class="container">
+    <!-- AI技术发展指数排名 -->
+     <div class="chart-box">
+        <div class="chart-title">AI技术发展指数排名</div>
+        <div id="aiRanking" class="chart"></div>
+    </div>
+
+    <!-- AI应用领域分布 -->
+    <div class="chart-box">
+        <div class="chart-title">AI应用领域分布</div>
+        <div id="aiDistribution" class="chart"></div>
+    </div>
+
+    <!-- AI人才需求分布 -->
+    <div class="chart-box">
+        <div class="chart-title">AI人才需求分布</div>
+        <div id="aiTalent" class="chart"></div>
+    </div>
+
+    <!-- 中国AI发展地图 -->
+    <div class="chart-box center-map">
+        <div class="chart-title">中国AI发展地图</div>
+        <div id="aiMap" class="chart"></div>
+    </div>
+
+    <!-- AI投资规模 -->
+    <div class="chart-box">
+        <div class="chart-title">AI投资规模（亿元）</div>
+        <div id="aiInvestment" class="chart"></div>
+    </div>
+
+    <!-- AI技术专利分布 -->
+    <div class="chart-box">
+        <div class="chart-title">AI技术专利分布</div>
+        <div id="aiPatent" class="chart"></div>
+    </div>
+
+    <!-- 新增的气泡图 -->
+       <div class="chart-box">
+        <div class="chart-title">AI技术发展分布</div>
+        <div id="bubbleChart" class="chart"></div>
+    </div>
+</div>
+    <script>
+       // 等待页面加载完成
+       document.addEventListener('DOMContentLoaded', function() {
+           // AI技术发展指数排名
+           const aiRanking = echarts.init(document.getElementById('aiRanking'));
+           aiRanking.setOption({
+               tooltip: {
+                   trigger: 'axis',
+                   axisPointer: {
+                       type: 'shadow'
+                   }
+               },
+               grid: {
+                   left: '3%',
+                   right: '4%',
+                   bottom: '3%',
+                   containLabel: true
+               },
+               xAxis: {
+                   type: 'value',
+                   axisLabel: {
+                       color: '#fff'
+                   }
+               },
+               yAxis: {
+                   type: 'category',
+                   data: ['计算机视觉', '自然语言处理', '机器学习', '深度学习', '语音识别'],
+                   axisLabel: {
+                       color: '#fff'
+                   }
+               },
+               series: [{
+                   name: '发展指数',
+                   type: 'bar',
+                   data: [89, 86, 82, 78, 75],
+                   itemStyle: {
+                       color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{
+                           offset: 0,
+                           color: '#00a0e9'
+                       }, {
+                           offset: 1,
+                           color: '#00ffd8'
+                       }])
+                   }
+               }]
+           });
+            // AI应用领域分布
+           const aiDistribution = echarts.init(document.getElementById('aiDistribution'));
+           aiDistribution.setOption({
+               tooltip: {
+                   trigger: 'item'
+               },
+               legend: {
+                   orient: 'vertical',
+                   right: 10,
+                   top: 'center',
+                   textStyle: {
+                       color: '#fff'
+                   }
+               },
+               series: [{
+                   name: '应用领域',
+                   type: 'pie',
+                   radius: ['40%', '70%'],
+                   data: [
+                       {value: 35, name: '医疗健康'},
+                       {value: 25, name: '金融科技'},
+                       {value: 20, name: '智能制造'},
+                       {value: 15, name: '智慧城市'},
+                       {value: 5, name: '其他'}
+                   ],
+                   itemStyle: {
+                       borderRadius: 10,
+                       borderColor: '#fff',
+                       borderWidth: 2
+                   },
+                   label: {
+                       color: '#fff'
+                   }
+               }]
+           });
+            // AI人才需求分布
+           const aiTalent = echarts.init(document.getElementById('aiTalent'));
+           aiTalent.setOption({
+               tooltip: {
+                   trigger: 'axis'
+               },
+               legend: {
+                   data: ['需求量'],
+                   textStyle: {
+                       color: '#fff'
+                   }
+               },
+               xAxis: {
+                   type: 'category',
+                   data: ['算法工程师', '开发工程师', '数据分析师', '研究员', '产品经理'],
+                   axisLabel: {
+                       color: '#fff'
+                   }
+               },
+               yAxis: {
+                   type: 'value',
+                   axisLabel: {
+                       color: '#fff'
+                   }
+               },
+               series: [{
+                   name: '需求量',
+                   type: 'bar',
+                   data: [150, 130, 100, 80, 60],
+                   itemStyle: {
+                       color: '#00a0e9'
+                   }
+               }]
+           });
+            // 监听窗口大小变化，调整图表大小
+           window.addEventListener('resize', function() {
+               aiRanking.resize();
+               aiDistribution.resize();
+               aiTalent.resize();
+           });
+       });
+   </script>
+   <script>
+ document.addEventListener('DOMContentLoaded', function() {
+    // 初始化中国地图
+    const aiMap = echarts.init(document.getElementById('aiMap'));
+    
+    // 确保地图数据已加载
+    if (!echarts.getMap('china')) {
+        console.error('中国地图数据未能正确加载');
+        return;
+    }
+    
+    // 地图配置项
+    const mapOption = {
+        tooltip: {
+            trigger: 'item',
+            formatter: '{b}<br/>AI发展指数：{c}'
+        },
+        visualMap: {
+            min: 0,
+            max: 100,
+            text: ['高', '低'],
+            realtime: false,
+            calculable: true,
+            inRange: {
+                color: ['#e0f3f8', '#045fb4']
+            },
+            textStyle: {
+                color: '#fff'
+            }
+        },
+        series: [{
+            name: 'AI发展指数',
+            type: 'map',
+            map: 'china',
+            itemStyle: {
+                normal: {
+                    borderColor: '#fff',
+                    areaColor: '#0e4b8d'
+                },
+                emphasis: {
+                    areaColor: '#00a0e9',
+                    borderWidth: 1
+                }
+            },
+            data: [
+                {name: '北京', value: 95},
+                {name: '上海', value: 90},
+                {name: '广东', value: 88},
+                {name: '浙江', value: 85},
+                {name: '江苏', value: 82},
+                {name: '四川', value: 75},
+                {name: '湖北', value: 72},
+                {name: '陕西', value: 70},
+                {name: '山东', value: 68},
+                {name: '河南', value: 65},
+                {name: '福建', value: 63},
+                {name: '重庆', value: 60},
+                {name: '安徽', value: 58},
+                {name: '湖南', value: 55},
+                {name: '河北', value: 52},
+                {name: '广西', value: 50},
+                {name: '江西', value: 48},
+                {name: '辽宁', value: 45},
+                {name: '云南', value: 42},
+                {name: '贵州', value: 40}
+            ]
+        }]
+    };
+
+    aiMap.setOption(mapOption);
+
+    // 添加错误处理
+    aiMap.on('renderFailed', function (params) {
+        console.error('地图渲染失败:', params);
+    });
+});
+</script>
+ 
+  <script>
+    // 保留原有的图表初始化代码
+    document.addEventListener('DOMContentLoaded', function() {
+        // ... 原有的图表代码 ...
+        
+        // 添加气泡图初始化
+        const bubbleChart = echarts.init(document.getElementById('bubbleChart'));
+        const bubbleOption = {
+            // ... 气泡图配置代码 ...
+        };
+        bubbleChart.setOption(bubbleOption);
+        
+        // 更新 resize 事件处理
+        window.addEventListener('resize', function() {
+            aiRanking.resize();
+            aiDistribution.resize();
+            aiTalent.resize();
+            aiMap.resize();
+            bubbleChart.resize();  // 添加气泡图的 resize
+        });
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // AI投资规模图表
+    const aiInvestment = echarts.init(document.getElementById('aiInvestment'));
+    aiInvestment.setOption({
+        tooltip: {
+            trigger: 'axis'
+        },
+        xAxis: {
+            type: 'category',
+            data: ['2018', '2019', '2020', '2021', '2022'],
+            axisLabel: {
+                color: '#fff'
+            }
+        },
+        yAxis: {
+            type: 'value',
+            axisLabel: {
+                color: '#fff'
+            }
+        },
+        series: [{
+            data: [500, 800, 1200, 1500, 2000],
+            type: 'line',
+            smooth: true,
+            lineStyle: {
+                color: '#00a0e9'
+            },
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                    offset: 0,
+                    color: 'rgba(0, 160, 233, 0.5)'
+                }, {
+                    offset: 1,
+                    color: 'rgba(0, 160, 233, 0.1)'
+                }])
+            }
+        }]
+    });
+
+    // AI技术专利分布
+    const aiPatent = echarts.init(document.getElementById('aiPatent'));
+    aiPatent.setOption({
+        tooltip: {
+            trigger: 'item'
+        },
+        legend: {
+            orient: 'vertical',
+            right: 10,
+            top: 'center',
+            textStyle: {
+                color: '#fff'
+            }
+        },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            data: [
+                {value: 35, name: '机器学习'},
+                {value: 30, name: '计算机视觉'},
+                {value: 25, name: '自然语言处理'},
+                {value: 20, name: '语音识别'},
+                {value: 15, name: '智能机器人'}
+            ],
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            label: {
+                color: '#fff'
+            }
+        }]
+    });
+
+    // AI技术发展分布（气泡图）
+    const bubbleChart = echarts.init(document.getElementById('bubbleChart'));
+    bubbleChart.setOption({
+        tooltip: {
+            trigger: 'item',
+            formatter: function(params) {
+                return `${params.data.name}<br/>
+                        市场占比: ${params.data.value[0]}%<br/>
+                        增长率: ${params.data.value[1]}%<br/>
+                        投资规模: ${params.data.value[2]}亿`;
+            }
+        },
+        xAxis: {
+            type: 'value',
+            name: '市场占比(%)',
+            axisLabel: {
+                color: '#fff'
+            }
+        },
+        yAxis: {
+            type: 'value',
+            name: '增长率(%)',
+            axisLabel: {
+                color: '#fff'
+            }
+        },
+        series: [{
+            type: 'scatter',
+            data: [
+                {name: '机器学习', value: [28, 45, 200]},
+                {name: '深度学习', value: [22, 38, 180]},
+                {name: '计算机视觉', value: [18, 42, 150]},
+                {name: '自然语言处理', value: [15, 35, 120]},
+                {name: '智能机器人', value: [12, 30, 90]}
+            ],
+            symbolSize: function(data) {
+                return Math.sqrt(data[2]) * 5;
+            },
+            itemStyle: {
+                color: '#00a0e9'
+            },
+            label: {
+                show: true,
+                formatter: '{b}',
+                color: '#fff'
+            }
+        }]
+    });
+
+    // 中国AI发展地图
+    const aiMap = echarts.init(document.getElementById('aiMap'));
+    aiMap.setOption({
+        tooltip: {
+            trigger: 'item',
+            formatter: '{b}<br/>AI发展指数：{c}'
+        },
+        visualMap: {
+            min: 0,
+            max: 100,
+            text: ['高', '低'],
+            realtime: false,
+            calculable: true,
+            inRange: {
+                color: ['#e0f3f8', '#045fb4']
+            },
+            textStyle: {
+                color: '#fff'
+            }
+        },
+        series: [{
+            type: 'map',
+            map: 'china',
+            itemStyle: {
+                normal: {
+                    borderColor: '#fff',
+                    areaColor: '#0e4b8d'
+                },
+                emphasis: {
+                    areaColor: '#00a0e9'
+                }
+            },
+            data: [
+                {name: '北京', value: 95},
+                {name: '上海', value: 90},
+                {name: '广东', value: 88},
+                {name: '浙江', value: 85},
+                {name: '江苏', value: 82},
+                // ... 其他省份数据
+            ]
+        }]
+    });
+
+    // 监听窗口大小变化，调整图表大小
+    window.addEventListener('resize', function() {
+        aiInvestment.resize();
+        aiPatent.resize();
+        bubbleChart.resize();
+        aiMap.resize();
+    });
+});
+</script>
+</body>
+</html>
